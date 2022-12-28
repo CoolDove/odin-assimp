@@ -1,10 +1,33 @@
 ﻿package assimp
 
+/*
+Assimp
+
+TIPS:
+- Assimp doesnt support the latest .blend file format.
+
+TODO:
+- Animation(Confirm)
+- Matrix(Confirm)
+- Node(Confirm)
+- Load...Ex
+*/
+
+
+
 import ai "import"
+import "core:strings"
 
-get_error_string :: ai.get_error_string
 
-import_file                     :: ai.import_file
+import_file :: proc {
+    import_file_from_memory,
+    import_file_from_file,
+}
+
+// assimp procs
+get_error_string                :: ai.get_error_string
+import_file_from_memory         :: ai.import_file_from_memory
+import_file_from_file           :: ai.import_file
 release_import                  :: ai.release_import
 apply_post_processing           :: ai.apply_post_processing
 is_extension_supported          :: ai.is_extension_supported
@@ -31,6 +54,32 @@ get_material_string             :: ai.get_material_string
 get_material_textureCount       :: ai.get_material_textureCount
 get_material_texture            :: ai.get_material_texture
 
+// assimp types
+VectorKey           :: ai.aiVectorKey
+QuatKey             :: ai.aiQuatKey
+AnimBehaviour       :: ai.aiAnimBehaviour
+NodeAnim            :: ai.aiNodeAnim
+Animation           :: ai.aiAnimation
+Bool                :: ai.aiBool
+String              :: ai.aiString
+Return              :: ai.aiReturn
+Origin              :: ai.aiOrigin
+DefautLogStream     :: ai.aiDefaultLogStream
+MemoryInfo          :: ai.aiMemoryInfo
+Camera              :: ai.aiCamera
+TextureOp           :: ai.aiTextureOp
+TextureMapMode      :: ai.aiTextureMapMode
+TextureMapping      :: ai.aiTextureMapping
+TextureType         :: ai.aiTextureType
+ShadingMode         :: ai.aiShadingMode
+TextureFlags        :: ai.aiTextureFlags
+BlendMode           :: ai.aiBlendMode
+Transform           :: ai.aiUVTransform
+PropeyTypeInfo      :: ai.aiPropertyTypeInfo
+MaterlProperty      :: ai.aiMaterialProperty
+Material            :: ai.aiMaterial
+LightSourceType     :: ai.aiLightSourceType
+Light               :: ai.aiLight
 Face                :: ai.aiFace
 VertexWeight        :: ai.aiVertexWeight
 Bone                :: ai.aiBone
@@ -52,3 +101,8 @@ Node                :: ai.aiNode
 SceneFlags          :: ai.aiSceneFlags
 Scene               :: ai.aiScene
 PostProcessSteps    :: ai.aiPostProcessSteps
+
+// helper procs
+string_clone_from_ai_string :: proc(aistr : ^String, allocator := context.allocator) -> string {
+    return strings.clone_from_bytes(aistr.data[:aistr.length], allocator)
+}

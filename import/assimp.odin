@@ -1,22 +1,53 @@
 ﻿package assimp_import
 
+
+import linalg "core:math/linalg"
+
 when ODIN_OS == .Windows {
-    // when ODIN_DEBUG do foreign import assimp "./lib/assimp-vc143-mtd.lib"
-    // else do foreign import assimp "./lib/assimp-vc143-mt.lib"
     when ODIN_DEBUG do foreign import assimp "../lib/assimp-vc143-mtd.lib"
     else do foreign import assimp "../lib/assimp-vc143-mt.lib"
 } else {
-    #panic(true)
     // Windows only
+    #panic(true)
 }
-
-// foreign import lib "assimp-vc140-mt.lib";
 
 @(default_calling_convention="c")
 foreign assimp {
-    @(link_name="aiGetErrorString")            get_error_string :: proc() -> cstring ---
+    @(link_name="aiGetErrorString")            get_error_string :: proc() -> cstring ---;
 
-	@(link_name="aiImportFile")                import_file :: proc(file:cstring, postprocessFlags: u32) -> ^aiScene ---;
+	@(link_name="aiImportFile")                import_file :: proc(file:cstring, postprocessFlags: aiPostProcessSteps) -> ^aiScene ---;
+	// --------------------------------------------------------------------------------
+	/** Reads the given file from a given memory buffer,
+	 *
+	 * If the call succeeds, the contents of the file are returned as a pointer to an
+	 * aiScene object. The returned data is intended to be read-only, the importer keeps
+	 * ownership of the data and will destroy it upon destruction. If the import fails,
+	 * NULL is returned.
+	 * A human-readable error description can be retrieved by calling aiGetErrorString().
+	 * @param pBuffer Pointer to the file data
+	 * @param pLength Length of pBuffer, in bytes
+	 * @param pFlags Optional post processing steps to be executed after
+	 *   a successful import. Provide a bitwise combination of the
+	 *   #aiPostProcessSteps flags. If you wish to inspect the imported
+	 *   scene first in order to fine-tune your post-processing setup,
+	 *   consider to use #aiApplyPostProcessing().
+	 * @param pHint An additional hint to the library. If this is a non empty string,
+	 *   the library looks for a loader to support the file extension specified by pHint
+	 *   and passes the file to the first matching loader. If this loader is unable to
+	 *   completely the request, the library continues and tries to determine the file
+	 *   format on its own, a task that may or may not be successful.
+	 *   Check the return value, and you'll know ...
+	 * @return A pointer to the imported data, NULL if the import failed.
+	 *
+	 * @note This is a straightforward way to decode models from memory
+	 * buffers, but it doesn't handle model formats that spread their
+	 * data across multiple files or even directories. Examples include
+	 * OBJ or MD3, which outsource parts of their material info into
+	 * external scripts. If you need full functionality, provide
+	 * a custom IOSystem to make Assimp find these files and use
+	 * the regular aiImportFileEx()/aiImportFileExWithProperties() API.
+	 */
+	@(link_name="aiImportFileFromMemory") 	   import_file_from_memory :: proc(buffer: [^]byte, pLength : u32, pFlags : aiPostProcessSteps, pHint: cstring) -> ^aiScene ---;
 	@(link_name="aiReleaseImport")             release_import :: proc(pScene: ^aiScene) ---;
 
 	// @(link_name="aiImportFileEx")              import_fileex :: proc(pFile:cstring,pFlags: u32,pFS: ^aiFileIO) -> ^aiScene ---;
@@ -51,6 +82,15 @@ foreign assimp {
 	@(link_name="aiGetMaterialTexture")        get_material_texture :: proc(mat: ^aiMaterial,type: aiTextureType,index: u32,path: ^aiString,mapping: ^aiTextureMapping,uvindex: ^u32,blend: ^f64,op: ^aiTextureOp,mapmode: ^aiTextureMapMode) -> aiReturn ---;
 }
 
+AI_MAX_FACE_INDICES :: 0x7fff;
+AI_MAX_BONE_WEIGHTS :: 0x7fffffff;
+AI_MAX_VERTICES :: 0x7fffffff;
+AI_MAX_FACES :: 0x7fffffff;
+AI_MAX_NUMBER_OF_COLOR_SETS :: 0x8;
+AI_MAX_NUMBER_OF_TEXTURECOORDS :: 0x8;
+
+AI_MAX_STRING_LENGTH :: 1024
+
 aiVectorKey :: struct {
 	mTime : f64,
 	mValue : aiVector3D,
@@ -69,11 +109,11 @@ aiAnimBehaviour :: enum u32 {
 aiNodeAnim :: struct {
 	mNodeName : aiString,
 	mNumPositionKeys : u32,
-	mPositionKeys : ^aiVectorKey,
+	mPositionKeys : [^]aiVectorKey,
 	mNumRotationKeys : u32,
-	mRotationKeys : ^aiQuatKey,
+	mRotationKeys : [^]aiQuatKey,
 	mNumScalingKeys : u32,
-	mScalingKeys : ^aiVectorKey,
+	mScalingKeys : [^]aiVectorKey,
 	mPreState : aiAnimBehaviour,
 	mPostState : aiAnimBehaviour,
 }
@@ -83,7 +123,7 @@ aiAnimation :: struct {
 	mDuration : f64,
 	mTicksPerSecond : f64,
 	mNumChannels : u32,
-	mChannels : ^^aiNodeAnim,
+	mChannels : [^]^aiNodeAnim,
 }
 
 aiBool :: enum int {
@@ -92,34 +132,27 @@ aiBool :: enum int {
 }
 
 aiString :: struct {
-	length : int,
-	data : u8,
+	length : u32,
+	data : [AI_MAX_STRING_LENGTH]u8,
 }
 
 aiReturn :: enum u32 {
       SUCCESS = 0x0,
       FAILURE = 0x1,
-      OUTOFMEMORY = 0x3
+      OUTOFMEMORY = 0x3,
 }
 
 aiOrigin :: enum u32 {
       SET = 0x0,
-
       CUR = 0x1,
-
-      END = 0x2
-
+      END = 0x2,
 }
 
 aiDefaultLogStream :: enum {
       FILE = 0x1,
-
       STDOUT = 0x2,
-
       STDERR = 0x4,
-
-      DEBUGGER = 0x8
-
+      DEBUGGER = 0x8,
 }
 
 aiMemoryInfo :: struct {
@@ -150,13 +183,13 @@ aiTextureOp :: enum u32 {
       Subtract = 0x2,
       Divide = 0x3,
       SmoothAdd = 0x4,
-      SignedAdd = 0x5
+      SignedAdd = 0x5,
 }
 aiTextureMapMode :: enum u32 {
       Wrap = 0x0,
       Clamp = 0x1,
       Decal = 0x3,
-      Mirror = 0x2
+      Mirror = 0x2,
 }
 aiTextureMapping :: enum u32 {
       UV = 0x0,
@@ -164,7 +197,7 @@ aiTextureMapping :: enum u32 {
       CYLINDER = 0x2,
       BOX = 0x3,
       PLANE = 0x4,
-      OTHER = 0x5
+      OTHER = 0x5,
 }
 
 aiTextureType :: enum u32 {
@@ -180,12 +213,12 @@ aiTextureType :: enum u32 {
       DISPLACEMENT = 0x9,
       LIGHTMAP = 0xA,
       REFLECTION = 0xB,
-      UNKNOWN = 0xC
+      UNKNOWN = 0xC,
 }
 
 aiShadingMode :: enum u32 {
       Flat = 0x1,
-      Gouraud =   0x2,
+      Gouraud = 0x2,
       Phong = 0x3,
       Blinn = 0x4,
       Toon = 0x5,
@@ -193,18 +226,18 @@ aiShadingMode :: enum u32 {
       Minnaert = 0x7,
       CookTorrance = 0x8,
       NoShading = 0x9,
-      Fresnel = 0xa
+      Fresnel = 0xa,
 }
 
 aiTextureFlags :: enum u32 {
       Invert = 0x1,
       UseAlpha = 0x2,
-      IgnoreAlpha = 0x4
+      IgnoreAlpha = 0x4,
 }
 
 aiBlendMode :: enum {
       Default = 0x0,
-      Additive = 0x1
+      Additive = 0x1,
 }
 
 aiUVTransform :: struct {
@@ -217,7 +250,7 @@ aiPropertyTypeInfo :: enum u32 {
       Float = 0x1,
       String = 0x3,
       Integer = 0x4,
-      Buffer = 0x5
+      Buffer = 0x5,
 }
 
 aiMaterialProperty :: struct {
@@ -226,7 +259,7 @@ aiMaterialProperty :: struct {
 	mIndex : u32,
 	mDataLength : u32,
 	mType : aiPropertyTypeInfo,
-	mData :cstring,
+	mData : cstring,
 }
 aiMaterial :: struct {
 	mProperties : ^^aiMaterialProperty,
@@ -271,13 +304,6 @@ aiLight :: struct {
 // 	UserData : aiUserData,
 // }
 
-AI_MAX_FACE_INDICES :: 0x7fff;
-AI_MAX_BONE_WEIGHTS :: 0x7fffffff;
-AI_MAX_VERTICES :: 0x7fffffff;
-AI_MAX_FACES :: 0x7fffffff;
-AI_MAX_NUMBER_OF_COLOR_SETS :: 0x8;
-AI_MAX_NUMBER_OF_TEXTURECOORDS :: 0x8;
-
 aiFace :: struct {
 	mNumIndices : u32,
 	mIndices : ^u32,
@@ -299,7 +325,7 @@ aiPrimitiveType :: enum u32 {
       POINT = 0x1,
       LINE = 0x2,
       TRIANGLE = 0x4,
-      POLYGON = 0x8
+      POLYGON = 0x8,
 }
 
 aiAnimMesh :: struct {
@@ -316,40 +342,44 @@ aiMesh :: struct {
 	mPrimitiveTypes : u32,
 	mNumVertices : u32,
 	mNumFaces : u32,
-	mVertices : ^aiVector3D,
-	mNormals : ^aiVector3D,
-	mTangents : ^aiVector3D,
-	mBitangents : ^aiVector3D,
-	mColors : [AI_MAX_NUMBER_OF_COLOR_SETS]^aiColor4D,
-	mTextureCoords : [AI_MAX_NUMBER_OF_TEXTURECOORDS]^aiVector3D,
+	mVertices : [^]aiVector3D,
+	mNormals : [^]aiVector3D,
+	mTangents : [^]aiVector3D,
+	mBitangents : [^]aiVector3D,
+	/** Vertex color sets.
+    * A mesh may contain 0 to #AI_MAX_NUMBER_OF_COLOR_SETS vertex
+    * colors per vertex. nullptr if not present. Each array is
+    * mNumVertices in size if present.
+    */
+	mColors : [AI_MAX_NUMBER_OF_COLOR_SETS][^]aiColor4D,
+	/** Vertex texture coordinates, also known as UV channels.
+    * A mesh may contain 0 to AI_MAX_NUMBER_OF_TEXTURECOORDS per
+    * vertex. nullptr if not present. The array is mNumVertices in size.
+    */
+	mTextureCoords : [AI_MAX_NUMBER_OF_TEXTURECOORDS][^]aiVector3D,
+    /** Specifies the number of components for a given UV channel.
+    * Up to three channels are supported (UVW, for accessing volume
+    * or cube maps). If the value is 2 for a given channel n, the
+    * component p.z of mTextureCoords[n][p] is set to 0.0f.
+    * If the value is 1 for a given channel, p.y is set to 0.0f, too.
+    * @note 4D coordinates are not supported
+    */
 	mNumUVComponents : [AI_MAX_NUMBER_OF_TEXTURECOORDS]u32,
-	mFaces : ^aiFace,
+	mFaces : [^]aiFace,
 	mNumBones : u32,
-	mBones : ^^aiBone,
+	mBones : [^]^aiBone,
 	mMaterialIndex : u32,
 	mName : aiString,
 	mNumAnimMeshes : u32,
-	mAnimMeshes : ^^aiAnimMesh,
+	mAnimMeshes : [^]^aiAnimMesh,
 	mMethod : u32,
 }
 
-aiVector2D :: struct {
-	x : f32,
-	y : f32,
-}
+aiVector2D :: linalg.Vector2f32
 
-aiVector3D :: struct {
-	x : f32,
-	y : f32,
-	z : f32,
-}
+aiVector3D :: linalg.Vector3f32
 
-aiQuaternion :: struct {
-	w : f32,
-	x : f32,
-	y : f32,
-	z : f32,
-}
+aiQuaternion :: linalg.Quaternionf32
 
 aiMatrix3x3 :: struct {
 	a1, a2, a3 : f32,
@@ -364,30 +394,16 @@ aiMatrix4x4 :: struct {
 	d1, d2, d3, d4 : f32,
 }
 
-aiPlane :: struct {
-	a : f32,
-	b : f32,
-	c : f32,
-	d : f32,
-}
+aiPlane :: linalg.Vector4f32
 
 aiRay :: struct {
 	pos : aiVector3D,
 	dir : aiVector3D,
 }
 
-aiColor3D :: struct {
-	r : f32,
-	g : f32,
-	b : f32,
-}
+aiColor3D :: linalg.Vector3f32
 
-aiColor4D :: struct {
-	r : f32,
-	g : f32,
-	b : f32,
-	a : f32,
-}
+aiColor4D :: linalg.Vector4f32
 
 aiTexel :: struct {
 	b : byte,
@@ -405,9 +421,9 @@ aiNode :: struct {
 	mTransformation : aiMatrix4x4,
 	mParent : ^aiNode,
 	mNumChildren : u32,
-	mChildren : ^^aiNode,
+	mChildren : [^]^aiNode,
 	mNumMeshes : int,
-	mMeshes : ^u32,
+	mMeshes : [^]u32,
 }
 
 aiSceneFlags :: enum u32 {
@@ -422,19 +438,20 @@ aiScene :: struct {
 	mFlags : u32,
 	mRootNode : ^aiNode,
 	mNumMeshes : u32,
-	mMeshes : ^^aiMesh,
+	mMeshes : [^]^aiMesh,
 	mNumMaterials : u32,
-	mMaterials : ^^aiMaterial,
+	mMaterials : [^]^aiMaterial,
 	mNumAnimations : u32,
-	mAnimations : ^^aiAnimation,
+	mAnimations : [^]^aiAnimation,
 	mNumTextures : u32,
-	mTextures : ^^aiTexture,
+	mTextures : [^]^aiTexture,
 	mNumLights : u32,
-	mLights : ^^aiLight,
+	mLights : [^]^aiLight,
 	mNumCameras : u32,
-	mCameras : ^^aiCamera,
+	mCameras : [^]^aiCamera,
 }
 
+// flags
 aiPostProcessSteps :: enum u32 {
 	CalcTangentSpace = 0x1,
 	JoinIdenticalVertices = 0x2,
