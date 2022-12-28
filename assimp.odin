@@ -26,9 +26,15 @@ import_file :: proc {
 
 // assimp procs
 get_error_string                :: ai.get_error_string
+
 import_file_from_memory         :: ai.import_file_from_memory
 import_file_from_file           :: ai.import_file
 release_import                  :: ai.release_import
+
+copy_scene                      :: ai.copy_scene
+free_scene                      :: ai.free_scene
+export_scene                    :: ai.export_scene
+
 apply_post_processing           :: ai.apply_post_processing
 is_extension_supported          :: ai.is_extension_supported
 get_extension_list              :: ai.get_extension_list
@@ -105,4 +111,11 @@ PostProcessSteps    :: ai.aiPostProcessSteps
 // helper procs
 string_clone_from_ai_string :: proc(aistr : ^String, allocator := context.allocator) -> string {
     return strings.clone_from_bytes(aistr.data[:aistr.length], allocator)
+}
+
+string_clone_to_ai_string :: proc(text: string, aistr: ^String) {
+    assert(aistr != nil, "You are clone to a nil aiString.")
+    data := raw_data(text)
+    copy(aistr.data[:], text)
+    aistr.length = cast(u32)len(text)
 }

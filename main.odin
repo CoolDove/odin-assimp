@@ -15,22 +15,42 @@ when ODIN_OS == .Windows {
     }
 }
 
-DATA_BANANA_FBX :: #load("banana.fbx")
+DATA_BANANA_FBX   :: #load("banana.fbx")
 
 main :: proc() {
     when ODIN_OS == .Windows do set_console_output_cp(65001)
 
-    mushroom := import_file("mushroom.fbx", .Triangulate)
-    banana := import_file(raw_data(DATA_BANANA_FBX), auto_cast len(DATA_BANANA_FBX), PostProcessSteps.Triangulate, "fbx")
+    mushroom := import_file_from_file("mushroom.fbx", .Triangulate)
+    banana := import_file_from_memory(raw_data(DATA_BANANA_FBX), auto_cast len(DATA_BANANA_FBX), cast(u32)PostProcessSteps.Triangulate, "fbx")
+    banana_copied : ^Scene
+    copy_scene(banana, &banana_copied)
+    defer {
+        free_scene(banana_copied)
+        release_import(banana)
+        release_import(mushroom)
+        fmt.printf("Loaded scene has been released.")
+    }
 
     if mushroom != nil do check_scene(mushroom, "mushroom.fbx")
     if banana != nil do check_scene(banana, "banana.fbx")
+    if banana_copied != nil do check_scene(banana_copied, "banana_copied")
+
+    {
+        node_name_ptr := &banana_copied.mRootNode.mChildren[0].mName
+        mesh := banana_copied.mMeshes[0]
+        for i in 0..<mesh.mNumVertices {
+            v := mesh.mVertices[i]
+            mesh.mVertices[i] = 3 * v
+        }
+        string_clone_to_ai_string("big_banana", &mesh.mName)
+        string_clone_to_ai_string("my_node", node_name_ptr)
+        export_result := export_scene(banana_copied, "fbx", "big_banana.fbx", 0x00)
+        fmt.printf("Export result: {}\n", export_result)
+    }
 
 }
 
 check_scene :: proc(scene: ^Scene, name : string) {
-    defer release_import(scene)
-
     fmt.printf("==== Scene: {} ====\n", name)
 
     mesh_count := scene.mNumMeshes
@@ -46,12 +66,6 @@ check_scene :: proc(scene: ^Scene, name : string) {
         fmt.printf("Mesh `{}` has {} vertices, {} uv channels, {} color channels.\n", 
             name, mesh.mNumVertices, uv_channel_count, color_channel_count)
         uv_components := mesh.mNumUVComponents 
-        // for i in 0..<mesh.mNumVertices {
-        //     x       := mesh.mVertices[i]
-        //     normal  := mesh.mNormals[i]
-        //     fmt.printf("{}: {} normal: {}\n", i, x, normal)
-        // }
     }
-
 
 }

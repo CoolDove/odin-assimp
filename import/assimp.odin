@@ -47,8 +47,89 @@ foreign assimp {
 	 * a custom IOSystem to make Assimp find these files and use
 	 * the regular aiImportFileEx()/aiImportFileExWithProperties() API.
 	 */
-	@(link_name="aiImportFileFromMemory") 	   import_file_from_memory :: proc(buffer: [^]byte, pLength : u32, pFlags : aiPostProcessSteps, pHint: cstring) -> ^aiScene ---;
-	@(link_name="aiReleaseImport")             release_import :: proc(pScene: ^aiScene) ---;
+	@(link_name="aiImportFileFromMemory") 	   	import_file_from_memory :: proc(buffer: [^]byte, pLength, pFlags : u32, pHint: cstring) -> ^aiScene ---;
+
+	@(link_name="aiReleaseImport")             	release_import :: proc(pScene: ^aiScene) ---;
+	// --------------------------------------------------------------------------------
+	/** Create a modifiable copy of a scene.
+	 *  This is useful to import files via Assimp, change their topology and
+	 *  export them again. Since the scene returned by the various importer functions
+	 *  is const, a modifiable copy is needed.
+	 *  @param pIn Valid scene to be copied
+	 *  @param pOut Receives a modifiable copy of the scene. Use aiFreeScene() to
+	 *    delete it again.
+	 */
+	@(link_name="aiCopyScene")					copy_scene :: proc(pIn: ^aiScene, pOut: ^^aiScene) --- ;
+
+	// --------------------------------------------------------------------------------
+	/** Frees a scene copy created using aiCopyScene() */
+	@(link_name="aiFreeScene") 					free_scene :: proc(pScene: ^aiScene) --- ;
+
+	// --------------------------------------------------------------------------------
+	/** Exports the given scene to a chosen file format and writes the result file(s) to disk.
+	* @param pScene The scene to export. Stays in possession of the caller, is not changed by the function.
+	*   The scene is expected to conform to Assimp's Importer output format as specified
+	*   in the @link data Data Structures Page @endlink. In short, this means the model data
+	*   should use a right-handed coordinate systems, face winding should be counter-clockwise
+	*   and the UV coordinate origin is assumed to be in the upper left. If your input data
+	*   uses different conventions, have a look at the last parameter.
+	* @param pFormatId ID string to specify to which format you want to export to. Use
+	* aiGetExportFormatCount() / aiGetExportFormatDescription() to learn which export formats are available.
+	* @param pFileName Output file to write
+	* @param pPreprocessing Accepts any choice of the #aiPostProcessSteps enumerated
+	*   flags, but in reality only a subset of them makes sense here. Specifying
+	*   'preprocessing' flags is useful if the input scene does not conform to
+	*   Assimp's default conventions as specified in the @link data Data Structures Page @endlink.
+	*   In short, this means the geometry data should use a right-handed coordinate systems, face
+	*   winding should be counter-clockwise and the UV coordinate origin is assumed to be in
+	*   the upper left. The #aiProcess_MakeLeftHanded, #aiProcess_FlipUVs and
+	*   #aiProcess_FlipWindingOrder flags are used in the import side to allow users
+	*   to have those defaults automatically adapted to their conventions. Specifying those flags
+	*   for exporting has the opposite effect, respectively. Some other of the
+	*   #aiPostProcessSteps enumerated values may be useful as well, but you'll need
+	*   to try out what their effect on the exported file is. Many formats impose
+	*   their own restrictions on the structure of the geometry stored therein,
+	*   so some preprocessing may have little or no effect at all, or may be
+	*   redundant as exporters would apply them anyhow. A good example
+	*   is triangulation - whilst you can enforce it by specifying
+	*   the #aiProcess_Triangulate flag, most export formats support only
+	*   triangulate data so they would run the step anyway.
+	*
+	*   If assimp detects that the input scene was directly taken from the importer side of
+	*   the library (i.e. not copied using aiCopyScene and potentially modified afterwards),
+	*   any post-processing steps already applied to the scene will not be applied again, unless
+	*   they show non-idempotent behavior (#aiProcess_MakeLeftHanded, #aiProcess_FlipUVs and
+	*   #aiProcess_FlipWindingOrder).
+	* @return a status code indicating the result of the export
+	* @note Use aiCopyScene() to get a modifiable copy of a previously
+	*   imported scene.
+	*/
+	@(link_name="aiExportScene")				export_scene :: proc(pScene: ^aiScene, pFormatId, pFileName: cstring, pPreprocessing: u32) -> aiReturn --- ;
+
+	@(link_name="aiApplyPostProcessing")       	apply_post_processing :: proc(pScene: ^aiScene,pFlags: u32) -> ^aiScene ---;
+	@(link_name="aiIsExtensionSupported")      	is_extension_supported :: proc(szExtension:cstring) -> aiBool ---;
+	@(link_name="aiGetExtensionList")          	get_extension_list :: proc(szOut: ^aiString) ---;
+	@(link_name="aiGetMemoryRequirements")     	get_memory_requirements :: proc(pIn: ^aiScene,info: ^aiMemoryInfo) ---;
+	@(link_name="aiSetImportPropertyInteger")  	set_import_property_integer :: proc(szName:cstring,value: int) ---;
+	@(link_name="aiSetImportPropertyFloat")    	set_import_property_float :: proc(szName:cstring,value: f64) ---;
+	@(link_name="aiSetImportPropertyString")   	set_import_property_string :: proc(szName:cstring,st: ^aiString) ---;
+	@(link_name="aiCreateQuaternionFromMatrix")	create_quaternion_from_matrix :: proc(quat: ^aiQuaternion,mat: ^aiMatrix3x3) ---;
+	@(link_name="aiDecomposeMatrix")           	decompose_matrix :: proc(mat: ^aiMatrix4x4,scaling: ^aiVector3D,rotation: ^aiQuaternion,position: ^aiVector3D) ---;
+	@(link_name="aiTransposeMatrix4")          	transpose_matrix4 :: proc(mat: ^aiMatrix4x4) ---;
+	@(link_name="aiTransposeMatrix3")          	transpose_matrix3 :: proc(mat: ^aiMatrix3x3) ---;
+	@(link_name="aiTransformVecByMatrix3")     	transform_vec_by_matrix3 :: proc(vec: ^aiVector3D,mat: ^aiMatrix3x3) ---;
+	@(link_name="aiTransformVecByMatrix4")     	transform_vec_by_matrix4 :: proc(vec: ^aiVector3D,mat: ^aiMatrix4x4) ---;
+	@(link_name="aiMultiplyMatrix4")           	multiply_matrix4 :: proc(dst: ^aiMatrix4x4,src: ^aiMatrix4x4) ---;
+	@(link_name="aiMultiplyMatrix3")           	multiply_matrix3 :: proc(dst: ^aiMatrix3x3,src: ^aiMatrix3x3) ---;
+	@(link_name="aiIdentityMatrix3")           	identity_matrix3 :: proc(mat: ^aiMatrix3x3) ---;
+	@(link_name="aiIdentityMatrix4")           	identity_matrix4 :: proc(mat: ^aiMatrix4x4) ---;
+	@(link_name="aiGetMaterialProperty")       	get_material_property :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pPropOut: ^^aiMaterialProperty) -> aiReturn ---;
+	@(link_name="aiGetMaterialFloatArray")     	get_material_floatArray :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^f64,pMax: ^u32) -> aiReturn ---;
+	@(link_name="aiGetMaterialIntegerArray")   	get_material_integerArray :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^int,pMax: ^u32) -> aiReturn ---;
+	@(link_name="aiGetMaterialColor")          	get_material_color :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^aiColor4D) -> aiReturn ---;
+	@(link_name="aiGetMaterialString")         	get_material_string :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^aiString) -> aiReturn ---;
+	@(link_name="aiGetMaterialTextureCount")   	get_material_textureCount :: proc(pMat: ^aiMaterial,type: aiTextureType) -> u32 ---;
+	@(link_name="aiGetMaterialTexture")        	get_material_texture :: proc(mat: ^aiMaterial,type: aiTextureType,index: u32,path: ^aiString,mapping: ^aiTextureMapping,uvindex: ^u32,blend: ^f64,op: ^aiTextureOp,mapmode: ^aiTextureMapMode) -> aiReturn ---;
 
 	// @(link_name="aiImportFileEx")              import_fileex :: proc(pFile:cstring,pFlags: u32,pFS: ^aiFileIO) -> ^aiScene ---;
 	// @(link_name="aiGetPredefinedLogStream")    get_predefined_log_stream :: proc(pStreams: aiDefaultLogStream,file:cstring) -> aiLogStream ---;
@@ -56,30 +137,6 @@ foreign assimp {
 	// @(link_name="aiEnableVerboseLogging")      enable_verbose_logging :: proc(d: aiBool) ---;
 	// @(link_name="aiDetachLogStream")           detach_log_stream :: proc(stream: ^aiLogStream) -> aiReturn ---;
 
-	@(link_name="aiApplyPostProcessing")       apply_post_processing :: proc(pScene: ^aiScene,pFlags: u32) -> ^aiScene ---;
-	@(link_name="aiIsExtensionSupported")      is_extension_supported :: proc(szExtension:cstring) -> aiBool ---;
-	@(link_name="aiGetExtensionList")          get_extension_list :: proc(szOut: ^aiString) ---;
-	@(link_name="aiGetMemoryRequirements")     get_memory_requirements :: proc(pIn: ^aiScene,info: ^aiMemoryInfo) ---;
-	@(link_name="aiSetImportPropertyInteger")  set_import_property_integer :: proc(szName:cstring,value: int) ---;
-	@(link_name="aiSetImportPropertyFloat")    set_import_property_float :: proc(szName:cstring,value: f64) ---;
-	@(link_name="aiSetImportPropertyString")   set_import_property_string :: proc(szName:cstring,st: ^aiString) ---;
-	@(link_name="aiCreateQuaternionFromMatrix")create_quaternion_from_matrix :: proc(quat: ^aiQuaternion,mat: ^aiMatrix3x3) ---;
-	@(link_name="aiDecomposeMatrix")           decompose_matrix :: proc(mat: ^aiMatrix4x4,scaling: ^aiVector3D,rotation: ^aiQuaternion,position: ^aiVector3D) ---;
-	@(link_name="aiTransposeMatrix4")          transpose_matrix4 :: proc(mat: ^aiMatrix4x4) ---;
-	@(link_name="aiTransposeMatrix3")          transpose_matrix3 :: proc(mat: ^aiMatrix3x3) ---;
-	@(link_name="aiTransformVecByMatrix3")     transform_vec_by_matrix3 :: proc(vec: ^aiVector3D,mat: ^aiMatrix3x3) ---;
-	@(link_name="aiTransformVecByMatrix4")     transform_vec_by_matrix4 :: proc(vec: ^aiVector3D,mat: ^aiMatrix4x4) ---;
-	@(link_name="aiMultiplyMatrix4")           multiply_matrix4 :: proc(dst: ^aiMatrix4x4,src: ^aiMatrix4x4) ---;
-	@(link_name="aiMultiplyMatrix3")           multiply_matrix3 :: proc(dst: ^aiMatrix3x3,src: ^aiMatrix3x3) ---;
-	@(link_name="aiIdentityMatrix3")           identity_matrix3 :: proc(mat: ^aiMatrix3x3) ---;
-	@(link_name="aiIdentityMatrix4")           identity_matrix4 :: proc(mat: ^aiMatrix4x4) ---;
-	@(link_name="aiGetMaterialProperty")       get_material_property :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pPropOut: ^^aiMaterialProperty) -> aiReturn ---;
-	@(link_name="aiGetMaterialFloatArray")     get_material_floatArray :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^f64,pMax: ^u32) -> aiReturn ---;
-	@(link_name="aiGetMaterialIntegerArray")   get_material_integerArray :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^int,pMax: ^u32) -> aiReturn ---;
-	@(link_name="aiGetMaterialColor")          get_material_color :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^aiColor4D) -> aiReturn ---;
-	@(link_name="aiGetMaterialString")         get_material_string :: proc(pMat: ^aiMaterial,pKey:cstring,type: u32,index: u32,pOut: ^aiString) -> aiReturn ---;
-	@(link_name="aiGetMaterialTextureCount")   get_material_textureCount :: proc(pMat: ^aiMaterial,type: aiTextureType) -> u32 ---;
-	@(link_name="aiGetMaterialTexture")        get_material_texture :: proc(mat: ^aiMaterial,type: aiTextureType,index: u32,path: ^aiString,mapping: ^aiTextureMapping,uvindex: ^u32,blend: ^f64,op: ^aiTextureOp,mapmode: ^aiTextureMapMode) -> aiReturn ---;
 }
 
 AI_MAX_FACE_INDICES :: 0x7fff;
