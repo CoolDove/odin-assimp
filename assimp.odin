@@ -27,8 +27,19 @@ import_file :: proc {
 // assimp procs
 get_error_string                :: ai.get_error_string
 
-import_file_from_memory         :: ai.import_file_from_memory
-import_file_from_file           :: ai.import_file
+import_file_from_file           :: proc(file: string, postprocess_flags: PostProcessSteps) -> ^Scene {
+    file_cstr := strings.clone_to_cstring(file, context.temp_allocator)
+    return ai.import_file(file_cstr, postprocess_flags)
+}
+import_file_from_memory         :: proc(buffer: []byte, postprocess_flags : PostProcessSteps, format_hint: string) -> ^Scene {
+    hint_cstr := strings.clone_to_cstring(format_hint, context.temp_allocator)
+    return ai.import_file_from_memory(
+        raw_data(buffer),
+        cast(u32)len(buffer),
+        cast(u32)postprocess_flags,
+        hint_cstr
+    )
+}
 release_import                  :: ai.release_import
 
 copy_scene                      :: ai.copy_scene
