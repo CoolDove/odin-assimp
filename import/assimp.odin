@@ -363,7 +363,7 @@ aiLight :: struct {
 
 aiFace :: struct {
 	mNumIndices : u32,
-	mIndices : ^u32,
+	mIndices : [^]u32,
 }
 
 aiVertexWeight :: struct {
