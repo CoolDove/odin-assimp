@@ -27,16 +27,16 @@ import_file :: proc {
 // assimp procs
 get_error_string                :: ai.get_error_string
 
-import_file_from_file           :: proc(file: string, postprocess_flags: PostProcessSteps) -> ^Scene {
+import_file_from_file           :: proc(file: string, postprocess_flags: u32) -> ^Scene {
     file_cstr := strings.clone_to_cstring(file, context.temp_allocator)
     return ai.import_file(file_cstr, postprocess_flags)
 }
-import_file_from_memory         :: proc(buffer: []byte, postprocess_flags : PostProcessSteps, format_hint: string) -> ^Scene {
+import_file_from_memory         :: proc(buffer: []byte, postprocess_flags : u32, format_hint: string) -> ^Scene {
     hint_cstr := strings.clone_to_cstring(format_hint, context.temp_allocator)
     return ai.import_file_from_memory(
         raw_data(buffer),
         cast(u32)len(buffer),
-        cast(u32)postprocess_flags,
+        postprocess_flags,
         hint_cstr
     )
 }
@@ -130,3 +130,7 @@ string_clone_to_ai_string :: proc(text: string, aistr: ^String) {
     copy(aistr.data[:], text)
     aistr.length = cast(u32)len(text)
 }
+
+
+PostProcessPreset_Quality    :: ai.aiProcessPreset_TargetRealtime_Quality
+PostProcessPreset_MaxQuality :: ai.aiProcessPreset_TargetRealtime_MaxQuality
