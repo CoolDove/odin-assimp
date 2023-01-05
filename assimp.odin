@@ -17,6 +17,7 @@ TODO:
 
 import ai "import"
 import "core:strings"
+import "core:math/linalg"
 
 
 import_file :: proc {
@@ -119,6 +120,11 @@ SceneFlags          :: ai.aiSceneFlags
 Scene               :: ai.aiScene
 PostProcessSteps    :: ai.aiPostProcessSteps
 
+
+PostProcessPreset_Quality    :: ai.aiProcessPreset_TargetRealtime_Quality
+PostProcessPreset_MaxQuality :: ai.aiProcessPreset_TargetRealtime_MaxQuality
+
+
 // helper procs
 string_clone_from_ai_string :: proc(aistr : ^String, allocator := context.allocator) -> string {
     return strings.clone_from_bytes(aistr.data[:aistr.length], allocator)
@@ -131,6 +137,23 @@ string_clone_to_ai_string :: proc(text: string, aistr: ^String) {
     aistr.length = cast(u32)len(text)
 }
 
+matrix_convert :: proc {
+    matrix_convert_3,
+    matrix_convert_4,
+}
 
-PostProcessPreset_Quality    :: ai.aiProcessPreset_TargetRealtime_Quality
-PostProcessPreset_MaxQuality :: ai.aiProcessPreset_TargetRealtime_MaxQuality
+matrix_convert_4 :: proc(using ai_matrix : Matrix4x4) -> linalg.Matrix4f32 {
+    return linalg.Matrix4f32 {
+        a1, a2, a3, a4,
+        b1, b2, b3, b4,
+        c1, c2, c3, c4,
+        d1, d2, d3, d4
+    }
+}
+matrix_convert_3 :: proc(using ai_matrix : Matrix3x3) -> linalg.Matrix3f32 {
+    return linalg.Matrix3f32 {
+        a1, a2, a3,
+        b1, b2, b3,
+        c1, c2, c3
+    }
+}

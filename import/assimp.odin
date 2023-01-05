@@ -437,21 +437,21 @@ aiVector3D :: linalg.Vector3f32
 
 aiQuaternion :: linalg.Quaternionf32
 
-// aiMatrix3x3 :: struct {
-//     a1, a2, a3 : f32,
-//     b1, b2, b3 : f32,
-//     c1, c2, c3 : f32,
-// }
+aiMatrix3x3 :: struct {
+    a1, a2, a3 : f32,
+    b1, b2, b3 : f32,
+    c1, c2, c3 : f32,
+}
 
-// aiMatrix4x4 :: struct {
-//     a1, a2, a3, a4 : f32,
-//     b1, b2, b3, b4 : f32,
-//     c1, c2, c3, c4 : f32,
-//     d1, d2, d3, d4 : f32,
-// }
+aiMatrix4x4 :: struct {
+    a1, a2, a3, a4 : f32,
+    b1, b2, b3, b4 : f32,
+    c1, c2, c3, c4 : f32,
+    d1, d2, d3, d4 : f32,
+}
 
-aiMatrix3x3 :: linalg.Matrix3x3f32
-aiMatrix4x4 :: linalg.Matrix4x4f32
+// aiMatrix3x3 :: linalg.Matrix3x3f32
+// aiMatrix4x4 :: linalg.Matrix4x4f32
 
 aiPlane :: linalg.Vector4f32
 
@@ -477,8 +477,8 @@ aiTexture :: struct {
 
 aiNode :: struct {
     mName : aiString,
-    mTransformation : aiMatrix4x4,// FIXME: This is incorrect.
-    // mParent : ^aiNode, // WTF??? This doesn't exsit.
+    mTransformation : aiMatrix4x4,
+    mParent : ^aiNode,
     mNumChildren : u32,
     mChildren : [^]^aiNode,
     mNumMeshes : u32,
@@ -509,11 +509,6 @@ aiScene :: struct {
     mLights : [^]^aiLight,
     mNumCameras : u32,
     mCameras : [^]^aiCamera,
-    // Added by Dove, not tested.
-	mMetaData : rawptr,
-	mName	: aiString,
-	mNumSkeletons : u32,
-	mSkeletons    : [^]^aiSkeletons,
 }
 
 aiSkeletons :: struct {
@@ -548,7 +543,7 @@ aiPostProcessSteps :: enum u32 {
     OptimizeMeshes = 0x200000,
     OptimizeGraph  = 0x400000,
     FlipUVs = 0x800000,
-    FlipWindingOrder  = 0x1000000
+    FlipWindingOrder  = 0x1000000,
 }
 
 aiProcessPreset_TargetRealtime_Quality :u32:
