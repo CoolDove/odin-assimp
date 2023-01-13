@@ -184,7 +184,7 @@ aiAnimation :: struct {
 
 aiBool :: enum int {
       FALSE = 0,
-      TRUE = 1
+      TRUE = 1,
 }
 
 aiString :: struct {
@@ -327,7 +327,7 @@ aiLightSourceType :: enum u32 {
       UNDEFINED = 0x0,
       DIRECTIONAL = 0x1,
       POINT = 0x2,
-      SPOT = 0x3
+      SPOT = 0x3,
 }
 
 aiLight :: struct {

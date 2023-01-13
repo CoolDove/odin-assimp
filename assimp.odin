@@ -38,7 +38,7 @@ import_file_from_memory         :: proc(buffer: []byte, postprocess_flags : u32,
         raw_data(buffer),
         cast(u32)len(buffer),
         postprocess_flags,
-        hint_cstr
+        hint_cstr,
     )
 }
 release_import                  :: ai.release_import
@@ -147,13 +147,13 @@ matrix_convert_4 :: proc(using ai_matrix : Matrix4x4) -> linalg.Matrix4f32 {
         a1, a2, a3, a4,
         b1, b2, b3, b4,
         c1, c2, c3, c4,
-        d1, d2, d3, d4
+        d1, d2, d3, d4,
     }
 }
 matrix_convert_3 :: proc(using ai_matrix : Matrix3x3) -> linalg.Matrix3f32 {
     return linalg.Matrix3f32 {
         a1, a2, a3,
         b1, b2, b3,
-        c1, c2, c3
+        c1, c2, c3,
     }
 }
