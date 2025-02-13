@@ -373,7 +373,7 @@ aiVertexWeight :: struct {
 aiBone :: struct {
     mName : aiString,
     mNumWeights : u32,
-    mWeights : ^aiVertexWeight,
+    mWeights : [^]aiVertexWeight,
     mOffsetMatrix : aiMatrix4x4,
 }
 
