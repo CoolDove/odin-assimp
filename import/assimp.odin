@@ -483,7 +483,10 @@ aiVector2D :: linalg.Vector2f32
 
 aiVector3D :: linalg.Vector3f32
 
-aiQuaternion :: linalg.Quaternionf32
+// aiQuaternion :: linalg.Quaternionf32
+aiQuaternion :: struct {
+	w, x, y, z: f32,
+}
 
 aiMatrix3x3 :: struct {
 	a1, a2, a3: f32,
@@ -611,4 +614,3 @@ aiProcessPreset_TargetRealtime_MaxQuality ::
 	aiPostProcessSteps.FindInstances |
 	aiPostProcessSteps.ValidateDataStructure |
 	aiPostProcessSteps.OptimizeMeshes
-
