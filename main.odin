@@ -14,6 +14,7 @@ import ai "import"
 DATA_BANANA_FBX   :: #load("banana.fbx")
 
 main :: proc() {
+	rl.SetTargetFPS(60)
 	rl.InitWindow(800, 600, "Assimp Test")
 
 	cam : rl.Camera3D
@@ -25,6 +26,7 @@ main :: proc() {
 
 	model_mush   := rl_assimp_load("mushroom.fbx")
 	model_banana := rl_assimp_load(DATA_BANANA_FBX, "fbx")
+	model_duck := rl_assimp_load("models/animals/DuckWhite.fbx")
 
 	for !rl.WindowShouldClose() {
 		rl.UpdateCamera(&cam, .ORBITAL)
@@ -36,10 +38,15 @@ main :: proc() {
 			rl.DrawLine3D({-100,0,0}, {100,0,0}, rl.DARKGRAY)
 
 			rl.DrawCube({}, 1,1,1, rl.RED)
+
 			rl.DrawModel(model_mush, {}, 0.01, rl.GREEN)
 			rl.DrawModelWires(model_mush, {}, 0.01, rl.BLUE)
+
 			rl.DrawModel(model_banana, {}, 0.01, rl.YELLOW)
 			rl.DrawModelWires(model_banana, {}, 0.01, rl.BLUE)
+
+			rl.DrawModel(model_duck, {}, 1, rl.WHITE)
+			rl.DrawModelWires(model_duck, {}, 1, rl.RED)
 
 		rl.EndMode3D()
 		rl.EndDrawing()
@@ -47,6 +54,7 @@ main :: proc() {
 
 	rl.UnloadModel(model_mush)
 	rl.UnloadModel(model_banana)
+	rl.UnloadModel(model_duck)
 
 	rl.CloseWindow()
 }
@@ -74,7 +82,8 @@ rl_load_model_from_aimesh :: proc(aimesh: ^Mesh) -> rl.Model {
 		indices := cast([^]u16)rl.MemAlloc(auto_cast ( size_of(u16) * aimesh.mNumFaces * 3 ))
 		for i in 0..<aimesh.mNumFaces {
 			face := aimesh.mFaces[i]
-			mesh.triangleCount += auto_cast face.mNumIndices
+			mesh.triangleCount += 1
+			assert(face.mNumIndices == 3, "None-triangle face!")
 			indices[i*3+0] = cast(u16)face.mIndices[0]
 			indices[i*3+1] = cast(u16)face.mIndices[1]
 			indices[i*3+2] = cast(u16)face.mIndices[2]
@@ -104,7 +113,7 @@ check_scene :: proc(scene: ^Scene) {
 		uv_channel_count, color_channel_count := 0, 0
 		for uv in mesh.mNumUVComponents do if uv != 0 do uv_channel_count += 1
 		for c in mesh.mColors do if c != nil do color_channel_count += 1
-		fmt.printf("- Mesh `{}` has {} vertices, {} uv channels, {} color channels.\n", 
+		fmt.printf("- Mesh: [{}] has {} vertices, {} uv channels, {} color channels.\n", 
 			name, mesh.mNumVertices, uv_channel_count, color_channel_count)
 		uv_components := mesh.mNumUVComponents 
 	}

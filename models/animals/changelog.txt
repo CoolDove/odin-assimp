@@ -1,0 +1,10 @@
+Changelog
+
+[1.1] - 2017-08-14
+- Added this changelog to the asset .zip file
+- .fbx models rotated so that forward = +z
+- .fbx chicken scaled down to a more sensible size
+
+[1.0] - 2017-08-06
+- First release
+
