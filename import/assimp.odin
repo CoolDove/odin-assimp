@@ -353,7 +353,7 @@ aiMaterialProperty :: struct {
 	mData:       cstring,
 }
 aiMaterial :: struct {
-	mProperties:    ^^aiMaterialProperty,
+	mProperties:    [^]^aiMaterialProperty,
 	mNumProperties: u32,
 	mNumAllocated:  u32,
 }
@@ -433,12 +433,12 @@ aiPrimitiveType :: enum u32 {
 }
 
 aiAnimMesh :: struct {
-	mVertices:      ^aiVector3D,
-	mNormals:       ^aiVector3D,
-	mTangents:      ^aiVector3D,
-	mBitangents:    ^aiVector3D,
-	mColors:        [AI_MAX_NUMBER_OF_COLOR_SETS]^aiColor4D,
-	mTextureCoords: [AI_MAX_NUMBER_OF_TEXTURECOORDS]^aiVector3D,
+	mVertices:      [^]aiVector3D,
+	mNormals:       [^]aiVector3D,
+	mTangents:      [^]aiVector3D,
+	mBitangents:    [^]aiVector3D,
+	mColors:        [AI_MAX_NUMBER_OF_COLOR_SETS][^]aiColor4D,
+	mTextureCoords: [AI_MAX_NUMBER_OF_TEXTURECOORDS][^]aiVector3D,
 	mNumVertices:   u32,
 }
 
