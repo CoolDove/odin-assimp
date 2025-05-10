@@ -1,5 +1,4 @@
-﻿#+ private
-package assimp
+﻿package assimp
 
 import "base:runtime"
 import "core:fmt"
@@ -13,6 +12,7 @@ import rl "vendor:raylib"
 
 import ai "import"
 
+@private
 main :: proc() {
 	rl.SetTargetFPS(60)
 	rl.InitWindow(800, 600, "Assimp Test")
@@ -49,25 +49,30 @@ main :: proc() {
 }
 
 // only load the first mesh in a scene
+@private
 rl_assimp_load :: proc {
 	rl_assimp_load_from_file,
 	rl_assimp_load_from_data,
 }
+@private
 rl_assimp_load_from_file :: proc(file: string) -> rl.Model {
 	scene := import_file_from_file(file, auto_cast ai.aiProcessPreset_TargetRealtime_Quality)
 	defer release_import(scene)
 	return _rl_assimp_process_scene(scene)
 }
+@private
 rl_assimp_load_from_data :: proc(buffer: []byte, format_hint: string) -> rl.Model {
 	scene := import_file_from_memory(buffer, auto_cast ai.aiProcessPreset_TargetRealtime_Quality, format_hint)
 	defer release_import(scene)
 	return _rl_assimp_process_scene(scene)
 }
+@private
 _rl_assimp_process_scene :: proc(scene : ^Scene) -> rl.Model {
 	check_scene(scene)
 	return rl_load_model_from_aimesh(scene.mMeshes[0])
 }
 
+@private
 rl_load_model_from_aimesh :: proc(aimesh: ^Mesh) -> rl.Model {
 	aicolors := aimesh.mColors[0]
 	mesh : rl.Mesh; {
@@ -111,6 +116,7 @@ rl_load_model_from_aimesh :: proc(aimesh: ^Mesh) -> rl.Model {
 	return rlmodel
 }
 
+@private
 check_scene :: proc(scene: ^Scene) {
 	fmt.printf("==== Scene ====\n")
 	mesh_count := scene.mNumMeshes
