@@ -4,6 +4,8 @@ package assimp
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
+import "core:math"
+import "core:math/rand"
 import "core:math/linalg"
 import "core:c/libc"
 
@@ -11,49 +13,36 @@ import rl "vendor:raylib"
 
 import ai "import"
 
-DATA_BANANA_FBX   :: #load("banana.fbx")
-
 main :: proc() {
 	rl.SetTargetFPS(60)
 	rl.InitWindow(800, 600, "Assimp Test")
 
 	cam : rl.Camera3D
-	cam.position = { 10.0, 10.0, 10.0 }
+	cam.position = { 100.0, 100.0, 100.0 }
 	cam.target = { 0.0, 0.0, 0.0 }
 	cam.up = { 0.0, 1.0, 0.0 }
 	cam.fovy = 45.0
 	cam.projection = .PERSPECTIVE
 
-	model_mush   := rl_assimp_load("mushroom.fbx")
-	model_banana := rl_assimp_load(DATA_BANANA_FBX, "fbx")
-	model_duck := rl_assimp_load("models/animals/DuckWhite.fbx")
+	model_duck   := rl_assimp_load("models/animals/DuckWhite.fbx")
 
 	for !rl.WindowShouldClose() {
 		rl.UpdateCamera(&cam, .ORBITAL)
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 		rl.BeginMode3D(cam)
-
 			rl.DrawLine3D({0,0,-100}, {0,0,100}, rl.DARKGRAY)
 			rl.DrawLine3D({-100,0,0}, {100,0,0}, rl.DARKGRAY)
 
 			rl.DrawCube({}, 1,1,1, rl.RED)
 
-			rl.DrawModel(model_mush, {}, 0.01, rl.GREEN)
-			rl.DrawModelWires(model_mush, {}, 0.01, rl.BLUE)
-
-			rl.DrawModel(model_banana, {}, 0.01, rl.YELLOW)
-			rl.DrawModelWires(model_banana, {}, 0.01, rl.BLUE)
-
 			rl.DrawModel(model_duck, {}, 1, rl.WHITE)
-			rl.DrawModelWires(model_duck, {}, 1, rl.RED)
+			rl.DrawModelWires(model_duck, {}, 1, {0,0,0,12})
 
 		rl.EndMode3D()
 		rl.EndDrawing()
 	}
 
-	rl.UnloadModel(model_mush)
-	rl.UnloadModel(model_banana)
 	rl.UnloadModel(model_duck)
 
 	rl.CloseWindow()
@@ -66,17 +55,21 @@ rl_assimp_load :: proc {
 }
 rl_assimp_load_from_file :: proc(file: string) -> rl.Model {
 	scene := import_file_from_file(file, auto_cast ai.aiProcessPreset_TargetRealtime_Quality)
-	check_scene(scene)
-	return rl_load_model_from_aimesh(scene.mMeshes[0])
+	defer release_import(scene)
+	return _rl_assimp_process_scene(scene)
 }
 rl_assimp_load_from_data :: proc(buffer: []byte, format_hint: string) -> rl.Model {
 	scene := import_file_from_memory(buffer, auto_cast ai.aiProcessPreset_TargetRealtime_Quality, format_hint)
-	check_scene(scene)
 	defer release_import(scene)
+	return _rl_assimp_process_scene(scene)
+}
+_rl_assimp_process_scene :: proc(scene : ^Scene) -> rl.Model {
+	check_scene(scene)
 	return rl_load_model_from_aimesh(scene.mMeshes[0])
 }
 
 rl_load_model_from_aimesh :: proc(aimesh: ^Mesh) -> rl.Model {
+	aicolors := aimesh.mColors[0]
 	mesh : rl.Mesh; {
 		mesh.vertexCount = auto_cast aimesh.mNumVertices
 		indices := cast([^]u16)rl.MemAlloc(auto_cast ( size_of(u16) * aimesh.mNumFaces * 3 ))
@@ -88,19 +81,34 @@ rl_load_model_from_aimesh :: proc(aimesh: ^Mesh) -> rl.Model {
 			indices[i*3+1] = cast(u16)face.mIndices[1]
 			indices[i*3+2] = cast(u16)face.mIndices[2]
 		}
-		vertices := cast([^]Vector3D) rl.MemAlloc(auto_cast (size_of(Vector3D) * mesh.vertexCount))
-		normals  := cast([^]Vector3D) rl.MemAlloc(auto_cast (size_of(Vector3D) * mesh.vertexCount))
+		vertices :[^]Vector3D= auto_cast rl.MemAlloc(auto_cast (size_of(Vector3D) * mesh.vertexCount))
+		normals  :[^]Vector3D= auto_cast rl.MemAlloc(auto_cast (size_of(Vector3D) * mesh.vertexCount))
+		colors   :[^][4]u8   = nil
+		if aicolors != nil {
+			colors = auto_cast rl.MemAlloc(auto_cast (4 * mesh.vertexCount))
+		}
 		for v in 0..<aimesh.mNumVertices {
 			vertices[v] = aimesh.mVertices[v]
 			normals[v] = aimesh.mNormals[v]
+			if aicolors != nil {
+				col := aicolors[v]
+				colors[v] = {
+					auto_cast(col.r*255),
+					auto_cast(col.g*255),
+					auto_cast(col.b*255),
+					auto_cast(col.a*255)
+				}
+			}
 		}
 
 		mesh.indices  = auto_cast indices
 		mesh.vertices = auto_cast vertices
 		mesh.normals  = auto_cast normals
+		mesh.colors   = auto_cast colors
 		rl.UploadMesh(&mesh, false)
 	}
-	return rl.LoadModelFromMesh(mesh)
+	rlmodel := rl.LoadModelFromMesh(mesh)
+	return rlmodel
 }
 
 check_scene :: proc(scene: ^Scene) {
@@ -117,21 +125,4 @@ check_scene :: proc(scene: ^Scene) {
 			name, mesh.mNumVertices, uv_channel_count, color_channel_count)
 		uv_components := mesh.mNumUVComponents 
 	}
-}
-
-example_copy_and_export :: proc() {
-	// banana_copied : ^Scene
-	// copy_scene(banana, &banana_copied)
-	// {
-	// 	node_name_ptr := &banana_copied.mRootNode.mChildren[0].mName
-	// 	mesh := banana_copied.mMeshes[0]
-	// 	for i in 0..<mesh.mNumVertices {
-	// 		v := mesh.mVertices[i]
-	// 		mesh.mVertices[i] = 3 * v
-	// 	}
-	// 	string_clone_to_ai_string("big_banana", &mesh.mName)
-	// 	string_clone_to_ai_string("my_node", node_name_ptr)
-	// 	export_result := export_scene(banana_copied, "fbx", "big_banana.fbx", 0x00)
-	// 	fmt.printf("Export result: {}\n", export_result)
-	// }
 }
