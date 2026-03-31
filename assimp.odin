@@ -1,4 +1,6 @@
+#+feature using-stmt
 package assimp
+
 
 /*
 Assimp
