@@ -229,8 +229,8 @@ aiString :: struct {
 
 aiReturn :: enum u32 {
 	SUCCESS     = 0x0,
-	FAILURE     = 0x1,
-	OUTOFMEMORY = 0x3,
+	FAILURE     = ~u32(0), // -0x1
+	OUTOFMEMORY = ~u32(2), // -0x3
 }
 
 aiOrigin :: enum u32 {
